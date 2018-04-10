@@ -45,11 +45,11 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
-extern crate unicode_width;
-#[cfg(feature = "term_size")]
-extern crate term_size;
 #[cfg(feature = "hyphenation")]
 extern crate hyphenation;
+#[cfg(feature = "term_size")]
+extern crate term_size;
+extern crate unicode_width;
 
 use std::borrow::Cow;
 use std::str::CharIndices;
@@ -192,7 +192,6 @@ impl WordSplitter for Corpus {
     }
 }
 
-
 /// A Wrapper holds settings for wrapping and filling text. Use it
 /// when the convenience [`wrap_iter`], [`wrap`] and [`fill`] functions
 /// are not flexible enough.
@@ -289,7 +288,10 @@ impl<'w, 'a: 'w, S: WordSplitter> Wrapper<'a, S> {
     ///
     /// [`self.initial_indent`]: #structfield.initial_indent
     pub fn initial_indent(self, indent: &'a str) -> Wrapper<'a, S> {
-        Wrapper { initial_indent: indent, ..self }
+        Wrapper {
+            initial_indent: indent,
+            ..self
+        }
     }
 
     /// Change [`self.subsequent_indent`]. The subsequent indentation
@@ -311,7 +313,10 @@ impl<'w, 'a: 'w, S: WordSplitter> Wrapper<'a, S> {
     ///
     /// [`self.subsequent_indent`]: #structfield.subsequent_indent
     pub fn subsequent_indent(self, indent: &'a str) -> Wrapper<'a, S> {
-        Wrapper { subsequent_indent: indent, ..self }
+        Wrapper {
+            subsequent_indent: indent,
+            ..self
+        }
     }
 
     /// Change [`self.break_words`]. This controls if words longer
@@ -320,7 +325,10 @@ impl<'w, 'a: 'w, S: WordSplitter> Wrapper<'a, S> {
     ///
     /// [`self.break_words`]: #structfield.break_words
     pub fn break_words(self, setting: bool) -> Wrapper<'a, S> {
-        Wrapper { break_words: setting, ..self }
+        Wrapper {
+            break_words: setting,
+            ..self
+        }
     }
 
     /// Fill a line of text at `self.width` characters. Strings are
@@ -353,6 +361,22 @@ impl<'w, 'a: 'w, S: WordSplitter> Wrapper<'a, S> {
         for (i, line) in self.wrap_iter(s).enumerate() {
             if i > 0 {
                 result.push('\n');
+            }
+            result.push_str(&line);
+        }
+
+        result
+    }
+    /// Temporary doc to disable error
+    pub fn fill_indent(&self, s: &str, ind: &str) -> String {
+        // This will avoid reallocation in simple cases (no
+        // indentation, no hyphenation).
+        let mut result = String::with_capacity(s.len());
+
+        for (i, line) in self.wrap_iter(s).enumerate() {
+            if i > 0 {
+                let t = format!("\n{}", ind);
+                result.push_str(&t);
             }
             result.push_str(&line);
         }
@@ -488,10 +512,12 @@ impl<'w, 'a: 'w, S: WordSplitter> Wrapper<'a, S> {
     pub fn into_wrap_iter(self, s: &'a str) -> IntoWrapIter<'a, S> {
         let inner = WrapIterImpl::new(&self, s);
 
-        IntoWrapIter { wrapper: self, inner: inner }
+        IntoWrapIter {
+            wrapper: self,
+            inner: inner,
+        }
     }
 }
-
 
 /// An iterator over the lines of the input string which owns a
 /// `Wrapper`. An instance of `IntoWrapIter` is typically obtained
@@ -696,7 +722,6 @@ impl<'a> WrapIterImpl<'a> {
         None
     }
 }
-
 
 /// Return the current terminal width. If the terminal width cannot be
 /// determined (typically because the standard output is not connected
@@ -1003,8 +1028,10 @@ mod tests {
     fn issue_99() {
         // We did not reset the in_whitespace flag correctly and did
         // not handle single-character words after a line break.
-        assert_eq!(wrap("aaabbbccc x yyyzzzwww", 9),
-                   vec!["aaabbbccc", "x", "yyyzzzwww"]);
+        assert_eq!(
+            wrap("aaabbbccc x yyyzzzwww", 9),
+            vec!["aaabbbccc", "x", "yyyzzzwww"]
+        );
     }
 
     #[test]
@@ -1017,8 +1044,10 @@ mod tests {
     #[test]
     fn wide_character_handling() {
         assert_eq!(wrap("Hello, World!", 15), vec!["Hello, World!"]);
-        assert_eq!(wrap("Ｈｅｌｌｏ, Ｗｏｒｌｄ!", 15),
-                   vec!["Ｈｅｌｌｏ,", "Ｗｏｒｌｄ!"]);
+        assert_eq!(
+            wrap("Ｈｅｌｌｏ, Ｗｏｒｌｄ!", 15),
+            vec!["Ｈｅｌｌｏ,", "Ｗｏｒｌｄ!"]
+        );
     }
 
     #[test]
@@ -1064,8 +1093,10 @@ mod tests {
     #[test]
     fn hyphens_flag() {
         let wrapper = Wrapper::new(5).break_words(false);
-        assert_eq!(wrapper.wrap("The --foo-bar flag."),
-                   vec!["The", "--foo-", "bar", "flag."]);
+        assert_eq!(
+            wrapper.wrap("The --foo-bar flag."),
+            vec!["The", "--foo-", "bar", "flag."]
+        );
     }
 
     #[test]
@@ -1107,12 +1138,16 @@ mod tests {
     fn auto_hyphenation() {
         let corpus = hyphenation::load(Language::English_US).unwrap();
         let wrapper = Wrapper::new(10);
-        assert_eq!(wrapper.wrap("Internationalization"),
-                   vec!["Internatio", "nalization"]);
+        assert_eq!(
+            wrapper.wrap("Internationalization"),
+            vec!["Internatio", "nalization"]
+        );
 
         let wrapper = Wrapper::with_splitter(10, corpus);
-        assert_eq!(wrapper.wrap("Internationalization"),
-                   vec!["Interna-", "tionaliza-", "tion"]);
+        assert_eq!(
+            wrapper.wrap("Internationalization"),
+            vec!["Interna-", "tionaliza-", "tion"]
+        );
     }
 
     #[test]
@@ -1122,8 +1157,10 @@ mod tests {
         // into account.
         let corpus = hyphenation::load(Language::English_US).unwrap();
         let wrapper = Wrapper::with_splitter(15, corpus);
-        assert_eq!(wrapper.wrap("garbage   collection"),
-                   vec!["garbage   col-", "lection"]);
+        assert_eq!(
+            wrapper.wrap("garbage   collection"),
+            vec!["garbage   col-", "lection"]
+        );
     }
 
     #[test]
@@ -1154,8 +1191,10 @@ mod tests {
         assert_eq!(wrapper.wrap("over-caffinated"), vec!["over-", "caffinated"]);
 
         let wrapper = Wrapper::with_splitter(8, corpus).break_words(false);
-        assert_eq!(wrapper.wrap("over-caffinated"),
-                   vec!["over-", "caffi-", "nated"]);
+        assert_eq!(
+            wrapper.wrap("over-caffinated"),
+            vec!["over-", "caffi-", "nated"]
+        );
     }
 
     #[test]
