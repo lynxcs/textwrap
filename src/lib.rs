@@ -771,6 +771,10 @@ pub fn termwidth() -> usize {
 pub fn fill(s: &str, width: usize) -> String {
     Wrapper::new(width).fill(s)
 }
+///Placeholder
+pub fn fill_indent(s: &str, width: usize, ind: &str) -> String {
+    Wrapper::new(width).fill_indent(s, ind)
+}
 
 /// Wrap a line of text at `width` characters. Strings are wrapped
 /// based on their displayed width, not their size in bytes.
